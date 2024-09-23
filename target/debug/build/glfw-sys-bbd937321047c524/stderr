@@ -1,0 +1,17 @@
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_ASM_COMPILER
+    CMAKE_ASM_FLAGS
+    CMAKE_CXX_COMPILER
+    CMAKE_CXX_FLAGS
+
+
+make: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/glfw-sys-4.0.0+3.3.5/src/cocoa_window.m:366:62: warning: 'kUTTypeURL' is deprecated: first deprecated in macOS 12.0 - Use UTTypeURL or UTType.url (swift) instead. [-Wdeprecated-declarations]
+  366 |         [self registerForDraggedTypes:@[(__bridge NSString*) kUTTypeURL]];
+      |                                                              ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Headers/UTCoreTypes.h:210:26: note: 'kUTTypeURL' has been explicitly marked deprecated here
+  210 | extern const CFStringRef kUTTypeURL                                  API_DEPRECATED("Use UTTypeURL or UTType.url (swift) instead.", ios(3.0, 15.0), macos(10.4, 12.0), tvos(9.0, 15.0), watchos(1.0, 8.0));
+      |                          ^
+1 warning generated.

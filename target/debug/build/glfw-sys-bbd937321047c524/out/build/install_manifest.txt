@@ -1,0 +1,8 @@
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/libglfw3.a
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/include/GLFW/glfw3.h
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/include/GLFW/glfw3native.h
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/cmake/glfw3/glfw3Config.cmake
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/cmake/glfw3/glfw3ConfigVersion.cmake
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/cmake/glfw3/glfw3Targets.cmake
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/cmake/glfw3/glfw3Targets-debug.cmake
+/Users/maririn312/Desktop/nyanko_engine/target/debug/build/glfw-sys-bbd937321047c524/out/lib/pkgconfig/glfw3.pc

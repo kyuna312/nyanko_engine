@@ -1,0 +1,9 @@
+/Users/maririn312/Desktop/nyanko_engine/target/debug/deps/libanstyle_parse-5e4cb25ee9a9a7b5.rmeta: /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/lib.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/params.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/mod.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/definitions.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/table.rs
+
+/Users/maririn312/Desktop/nyanko_engine/target/debug/deps/anstyle_parse-5e4cb25ee9a9a7b5.d: /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/lib.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/params.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/mod.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/definitions.rs /Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/table.rs
+
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/lib.rs:
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/params.rs:
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/mod.rs:
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/definitions.rs:
+/Users/maririn312/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/anstyle-parse-0.2.5/src/state/table.rs:
