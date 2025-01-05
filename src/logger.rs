@@ -3,7 +3,7 @@ use env_logger::Builder;
 use std::io::Write;
 use chrono::Local;
 
-pub fn init() {
+pub fn init_logger() {
     Builder::new()
         .format(|buf, record| {
             writeln!(buf,

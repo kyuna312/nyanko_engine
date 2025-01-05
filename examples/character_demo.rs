@@ -27,7 +27,7 @@ fn main() {
     );
 
     // Load texture
-    let image_path = "assets/models/character/textures/character.jpg";
+    let image_path = "assets/models/character/textures/character.png";
     println!("Loading texture: {}", image_path);
     let texture = Texture::new(image_path)
         .expect("Failed to load texture");
