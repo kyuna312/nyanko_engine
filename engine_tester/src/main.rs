@@ -1,4 +1,4 @@
-use nyanko_engine::window::Window;
+use nyanko_engine::graphics::window::Window;
 use gl::types::*;
 
 fn main() {
