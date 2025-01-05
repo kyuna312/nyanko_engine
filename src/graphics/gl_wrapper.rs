@@ -1,74 +1,63 @@
-use std::collections::HashMap;
-use std::ffi::CString;
-use std::fs::File;
-use std::io::Read;
-use std::mem;
-use std::os::raw::*;
-use std::ptr;
-
 use gl::types::*;
-use cgmath::*;
-use cgmath::Vector3;
+use std::ffi::CString;
+use std::fs;
+use cgmath::{Vector2, Vector3, Vector4, Matrix4, Matrix};
 
-/// # Vertex Array Object (VAO)
 pub struct Vao {
     id: GLuint,
-    vertex_buffers: Vec<BufferObject>,
+    vbos: Vec<BufferObject>,
 }
 
 impl Vao {
-    /// Creates a new Vertex Array Object.
     pub fn new() -> Self {
         let mut id = 0;
         unsafe {
             gl::GenVertexArrays(1, &mut id);
         }
-        Self { 
+        Vao {
             id,
-            vertex_buffers: Vec::new(),
+            vbos: Vec::new(),
         }
     }
 
-    /// Binds the VAO.
     pub fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.id);
         }
     }
 
-    /// Unbinds the VAO.
-    pub fn unbind() {
-        unsafe {
-            gl::BindVertexArray(0);
-        }
-    }
-
     pub fn add_vertex_buffer(&mut self, data: &[f32], attributes: &[(GLuint, GLint)]) -> &BufferObject {
         self.bind();
-        let vbo = BufferObject::new(gl::ARRAY_BUFFER, gl::STATIC_DRAW);
+        let vbo = BufferObject::new();
         vbo.bind();
-        vbo.store_f32_data(data);
+        
+        unsafe {
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (data.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
+                data.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
 
-        let mut stride = 0;
-        for (_index, size) in attributes {
-            stride += size * std::mem::size_of::<GLfloat>() as GLint;
+            let mut offset: usize = 0;
+            let stride = attributes.iter().map(|(_, size)| *size as usize).sum::<usize>();
+            
+            for &(location, size) in attributes {
+                gl::EnableVertexAttribArray(location);
+                gl::VertexAttribPointer(
+                    location,
+                    size,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    (stride * std::mem::size_of::<f32>()) as GLsizei,
+                    (offset * std::mem::size_of::<f32>()) as *const _,
+                );
+                offset += size as usize;
+            }
         }
 
-        let mut offset = 0;
-        for (index, size) in attributes {
-            VertexAttribute::new(
-                *index,
-                *size,
-                gl::FLOAT,
-                gl::FALSE,
-                stride as GLsizei,
-                offset as *const c_void,
-            ).enable();
-            offset += size * std::mem::size_of::<GLfloat>() as GLint;
-        }
-
-        self.vertex_buffers.push(vbo);
-        self.vertex_buffers.last().unwrap()
+        self.vbos.push(vbo);
+        self.vbos.last().unwrap()
     }
 }
 
@@ -80,250 +69,146 @@ impl Drop for Vao {
     }
 }
 
-/// # Buffer Object (VBO)
-pub struct BufferObject {
-    id: GLuint,
-    target: GLenum,
-    usage: GLenum,
-}
-
-impl BufferObject {
-    /// Creates a new Buffer Object (VBO).
-    pub fn new(target: GLenum, usage: GLenum) -> Self {
-        let mut id = 0;
-        unsafe {
-            gl::GenBuffers(1, &mut id);
-        }
-        Self { id, target, usage }
-    }
-
-    /// Binds the buffer object.
-    pub fn bind(&self) {
-        unsafe {
-            gl::BindBuffer(self.target, self.id);
-        }
-    }
-
-    /// Unbinds the buffer object.
-    pub fn unbind(&self) {
-        unsafe {
-            gl::BindBuffer(self.target, 0);
-        }
-    }
-
-    /// Stores float data in the buffer.
-    pub fn store_f32_data(&self, data: &[f32]) {
-        unsafe {
-            gl::BufferData(
-                self.target,
-                (data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
-                data.as_ptr() as *const c_void,
-                self.usage,
-            );
-        }
-    }
-
-    /// Stores integer data in the buffer.
-    pub fn store_i32_data(&self, data: &[i32]) {
-        unsafe {
-            gl::BufferData(
-                self.target,
-                (data.len() * mem::size_of::<GLint>()) as GLsizeiptr,
-                data.as_ptr() as *const c_void,
-                self.usage,
-            );
-        }
-    }
-}
-
-impl Drop for BufferObject {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteBuffers(1, &self.id);
-        }
-    }
-}
-
-/// # Vertex Attribute
-pub struct VertexAttribute {
-    index: GLuint,
-}
-
-impl VertexAttribute {
-    /// Creates a new vertex attribute.
-    pub fn new(
-        index: GLuint,
-        size: GLint,
-        r#type: GLenum,
-        normalized: GLboolean,
-        stride: GLsizei,
-        pointer: *const c_void,
-    ) -> Self {
-        unsafe {
-            gl::VertexAttribPointer(index, size, r#type, normalized, stride, pointer);
-        }
-        Self { index }
-    }
-
-    /// Enables the vertex attribute.
-    pub fn enable(&self) {
-        unsafe {
-            gl::EnableVertexAttribArray(self.index);
-        }
-    }
-
-    /// Disables the vertex attribute.
-    pub fn disable(&self) {
-        unsafe {
-            gl::DisableVertexAttribArray(self.index);
-        }
-    }
-}
-
-/// # Shader Program
 pub struct ShaderProgram {
     id: GLuint,
-    uniforms: HashMap<String, GLint>,
-    uniform_cache: HashMap<String, Vec<f32>>,
 }
 
 impl ShaderProgram {
-    /// Creates a new shader program from vertex and fragment shader files.
-    pub fn new(vertex_shader_path: &str, fragment_shader_path: &str) -> Self {
-        let vertex_shader_source = Self::load_shader_source(vertex_shader_path);
-        let fragment_shader_source = Self::load_shader_source(fragment_shader_path);
+    pub fn new(vertex_path: &str, fragment_path: &str) -> Self {
+        let vertex_source = fs::read_to_string(vertex_path)
+            .expect(&format!("Failed to read vertex shader from {}", vertex_path));
+        let fragment_source = fs::read_to_string(fragment_path)
+            .expect(&format!("Failed to read fragment shader from {}", fragment_path));
 
         unsafe {
-            let vertex_shader = Self::compile_shader(&vertex_shader_source, gl::VERTEX_SHADER);
-            let fragment_shader = Self::compile_shader(&fragment_shader_source, gl::FRAGMENT_SHADER);
+            let vertex_shader = Self::compile_shader(&vertex_source, gl::VERTEX_SHADER);
+            let fragment_shader = Self::compile_shader(&fragment_source, gl::FRAGMENT_SHADER);
 
-            let id = gl::CreateProgram();
-            gl::AttachShader(id, vertex_shader);
-            gl::AttachShader(id, fragment_shader);
-            gl::LinkProgram(id);
+            let program_id = gl::CreateProgram();
+            gl::AttachShader(program_id, vertex_shader);
+            gl::AttachShader(program_id, fragment_shader);
+            gl::LinkProgram(program_id);
 
+            // Check for linking errors
+            let mut success = 0;
+            gl::GetProgramiv(program_id, gl::LINK_STATUS, &mut success);
+            if success == 0 {
+                let mut len = 0;
+                gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
+                let mut info_log = Vec::with_capacity(len as usize);
+                info_log.set_len((len as usize) - 1);
+                gl::GetProgramInfoLog(
+                    program_id,
+                    len,
+                    std::ptr::null_mut(),
+                    info_log.as_mut_ptr() as *mut GLchar,
+                );
+                
+                // Print shader sources for debugging
+                println!("Vertex Shader Source:\n{}", vertex_source);
+                println!("Fragment Shader Source:\n{}", fragment_source);
+                
+                panic!(
+                    "Shader program linking failed: {}\nVertex path: {}\nFragment path: {}",
+                    String::from_utf8_lossy(&info_log),
+                    vertex_path,
+                    fragment_path
+                );
+            }
+
+            // Clean up shaders after linking
             gl::DeleteShader(vertex_shader);
             gl::DeleteShader(fragment_shader);
 
-            Self {
-                id,
-                uniforms: HashMap::new(),
-                uniform_cache: HashMap::new(),
-            }
+            ShaderProgram { id: program_id }
         }
     }
 
-    /// Loads shader source code from a file.
-    fn load_shader_source(path: &str) -> String {
-        let mut file = File::open(path).unwrap_or_else(|_| panic!("Failed to open {}", path));
-        let mut source = String::new();
-        file.read_to_string(&mut source).expect("Failed to read shader");
-        source
-    }
-
-    /// Compiles a shader from source code.
     unsafe fn compile_shader(source: &str, shader_type: GLenum) -> GLuint {
         let shader = gl::CreateShader(shader_type);
         let c_str = CString::new(source.as_bytes()).unwrap();
-        gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
+        gl::ShaderSource(shader, 1, &c_str.as_ptr(), std::ptr::null());
         gl::CompileShader(shader);
+
+        // Check for compilation errors
+        let mut success = 0;
+        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
+        if success == 0 {
+            let mut len = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+            let mut info_log = Vec::with_capacity(len as usize);
+            info_log.set_len((len as usize) - 1);
+            gl::GetShaderInfoLog(
+                shader,
+                len,
+                std::ptr::null_mut(),
+                info_log.as_mut_ptr() as *mut GLchar,
+            );
+            let shader_type_str = match shader_type {
+                gl::VERTEX_SHADER => "vertex",
+                gl::FRAGMENT_SHADER => "fragment",
+                _ => "unknown",
+            };
+            panic!(
+                "{} shader compilation failed: {}\nSource:\n{}",
+                shader_type_str,
+                String::from_utf8_lossy(&info_log),
+                source
+            );
+        }
+
         shader
     }
 
-    /// Binds the shader program.
     pub fn bind(&self) {
         unsafe {
             gl::UseProgram(self.id);
         }
     }
 
-    /// Unbinds the current shader program.
-    pub fn unbind() {
-        unsafe {
-            gl::UseProgram(0);
-        }
-    }
-
-    /// Creates a uniform location in the shader program.
-    pub fn create_uniform(&mut self, name: &str) {
-        let location = unsafe {
-            gl::GetUniformLocation(self.id, CString::new(name).unwrap().as_ptr())
-        };
-        if location < 0 {
-            panic!("Uniform '{}' not found in shader program", name);
-        } else {
-            self.uniforms.insert(name.to_string(), location);
-        }
-    }
-
-    /// Sets a matrix4 uniform only if the value has changed
-    pub fn set_matrix4fv_uniform(&mut self, name: &str, matrix: &Matrix4<f32>) {
+    pub fn set_vector2f(&self, name: &str, value: &Vector2<f32>) {
         let c_name = CString::new(name).unwrap();
-        let matrix_array: &[f32; 16] = matrix.as_ref();
-        let matrix_data: Vec<f32> = matrix_array.to_vec();
-        
-        if let Some(cached) = self.uniform_cache.get(name) {
-            if *cached == matrix_data {
-                return; // Skip if unchanged
-            }
-        }
-
-        let location = unsafe {
-            gl::GetUniformLocation(self.id, c_name.as_ptr())
-        };
-
         unsafe {
-            gl::UniformMatrix4fv(
-                location,
-                1,
-                gl::FALSE,
-                matrix_data.as_ptr(),
+            gl::Uniform2f(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value.x,
+                value.y
             );
         }
-        self.uniform_cache.insert(name.to_string(), matrix_data);
     }
 
-    /// Sets a vector3 uniform only if the value has changed
-    pub fn set_vec3_uniform(&mut self, name: &str, value: &Vector3<f32>) {
-        let vec_data = vec![value.x, value.y, value.z];
-        
-        if let Some(cached) = self.uniform_cache.get(name) {
-            if *cached == vec_data {
-                return;
-            }
-        }
-
+    pub fn set_vector3f(&self, name: &str, value: &Vector3<f32>) {
+        let c_name = CString::new(name).unwrap();
         unsafe {
             gl::Uniform3f(
-                *self.uniforms.get(name).expect("Uniform not found"),
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value.x,
+                value.y,
+                value.z
+            );
+        }
+    }
+
+    pub fn set_vector4f(&self, name: &str, value: &Vector4<f32>) {
+        let c_name = CString::new(name).unwrap();
+        unsafe {
+            gl::Uniform4f(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 value.x,
                 value.y,
                 value.z,
-            );
-        }
-        self.uniform_cache.insert(name.to_string(), vec_data);
-    }
-
-    pub fn set_vector3f_uniform(&mut self, name: &str, vector: &Vector3<f32>) {
-        let c_name = CString::new(name).unwrap();
-        let location = unsafe {
-            gl::GetUniformLocation(self.id, c_name.as_ptr())
-        };
-
-        unsafe {
-            gl::Uniform3f(
-                location,
-                vector.x,
-                vector.y,
-                vector.z,
+                value.w
             );
         }
     }
 
-    fn get_uniform_location(&self, name: &str) -> i32 {
+    pub fn set_bool(&self, name: &str, value: bool) {
         let c_name = CString::new(name).unwrap();
         unsafe {
-            gl::GetUniformLocation(self.id, c_name.as_ptr())
+            gl::Uniform1i(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value as i32
+            );
         }
     }
 
@@ -346,12 +231,52 @@ impl ShaderProgram {
             );
         }
     }
+
+    pub fn set_matrix4fv(&self, name: &str, value: &Matrix4<f32>) {
+        let c_name = CString::new(name).unwrap();
+        unsafe {
+            gl::UniformMatrix4fv(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                1,
+                gl::FALSE,
+                value.as_ptr()
+            );
+        }
+    }
 }
 
 impl Drop for ShaderProgram {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteProgram(self.id);
+        }
+    }
+}
+
+pub struct BufferObject {
+    id: GLuint,
+}
+
+impl BufferObject {
+    pub fn new() -> Self {
+        let mut id = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut id);
+        }
+        BufferObject { id }
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.id);
+        }
+    }
+}
+
+impl Drop for BufferObject {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.id);
         }
     }
 }

@@ -1,7 +1,20 @@
-use log::LevelFilter;
+use log::{LevelFilter, info};
+use env_logger::Builder;
+use std::io::Write;
+use chrono::Local;
 
 pub fn init() {
-    env_logger::Builder::from_default_env()
-        .filter_level(LevelFilter::Debug)
+    Builder::new()
+        .format(|buf, record| {
+            writeln!(buf,
+                "{} [{}] - {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S"),
+                record.level(),
+                record.args()
+            )
+        })
+        .filter(None, LevelFilter::Info)
         .init();
+    
+    info!("Logger initialized");
 }
