@@ -159,5 +159,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Your Name - [@yourusername](https://twitter.com/yourusername)
-Project Link: [https://github.com/yourusername/nyanko_engine](https://github.com/yourusername/nyanko_engine)
+Your Name - [@yourusername](https://twitter.com/kyuna312)
+Project Link: [https://github.com/kyuna312/nyanko_engine](https://github.com/kyuna312/nyanko_engine)
