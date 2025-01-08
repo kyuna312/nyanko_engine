@@ -1,13 +1,13 @@
-pub mod gl_wrapper;
-pub mod window;
-pub mod texture;
-pub mod post_process;
-pub mod bloom;
-pub mod renderer;
+mod renderer;
+mod texture;
 
-pub use bloom::*;
-pub use gl_wrapper::*;
-pub use post_process::*;
-pub use texture::*;
-pub use window::*;
+pub use renderer::{Renderer, RendererConfig};
+pub use texture::Texture;
+
+// Comment out unused modules until they're implemented
+// pub use bloom::*;
+// pub use gl_wrapper::*;
+// pub use post_process::*;
+// pub use texture::*;
+// pub use window::*;
 

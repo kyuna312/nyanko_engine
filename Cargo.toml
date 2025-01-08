@@ -2,15 +2,23 @@
 name = "nyanko_engine"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A 2D game engine written in Rust"
+license = "MIT"
 
 [dependencies]
 gl = "0.14"
-glfw = "0.45"
+glutin = "0.29"
+glam = "0.24"
 image = "0.24"
-cgmath = "0.18"
 log = "0.4"
 env_logger = "0.10"
-chrono = "0.4"
+rayon = "1.7"
+parking_lot = "0.12"
 
 [build-dependencies]
 fs_extra = "1.3"
+
+[[example]]
+name = "physics_demo"
+path = "examples/physics_demo.rs"
