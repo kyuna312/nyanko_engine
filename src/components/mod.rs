@@ -1,6 +1,11 @@
-use glam::{Vec2, Vec3, Quat};
-use crate::graphics::Texture;
+mod character_stats;
+mod weapon;
+
+pub use character_stats::CharacterStats;
+pub use weapon::Weapon;
 use crate::ecs::Component;
+use crate::graphics::Texture;
+use glam::{Vec2, Vec3, Quat};
 
 #[derive(Clone)]
 pub struct Transform {

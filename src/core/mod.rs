@@ -1,6 +1,14 @@
 use std::time::{Instant, Duration};
 use glam::Vec2;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GameState {
+    Start,
+    Playing,
+    Paused,
+    GameOver,
+}
+
 pub struct Time {
     pub delta_time: f32,
     pub fixed_delta_time: f32,

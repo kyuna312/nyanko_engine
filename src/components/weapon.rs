@@ -11,7 +11,7 @@ pub struct Weapon {
     pub magazine_size: u32,
     pub current_ammo: u32,
     pub reload_time: Duration,
-    pub last_shot_time: Duration,
+    pub last_shot_time: f32,
     pub is_reloading: bool,
 }
 
@@ -27,18 +27,18 @@ impl Weapon {
             magazine_size: 30,
             current_ammo: 30,
             reload_time: Duration::from_secs(2),
-            last_shot_time: Duration::ZERO,
+            last_shot_time: 0.0,
             is_reloading: false,
         }
     }
 
-    pub fn can_shoot(&self, current_time: Duration) -> bool {
+    pub fn can_shoot(&self, current_time: f32) -> bool {
         !self.is_reloading 
             && self.current_ammo > 0 
-            && current_time - self.last_shot_time >= Duration::from_secs_f32(1.0 / self.fire_rate)
+            && current_time - self.last_shot_time >= 1.0 / self.fire_rate
     }
 
-    pub fn shoot(&mut self, current_time: Duration) -> bool {
+    pub fn shoot(&mut self, current_time: f32) -> bool {
         if self.can_shoot(current_time) {
             self.current_ammo -= 1;
             self.last_shot_time = current_time;
