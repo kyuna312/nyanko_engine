@@ -1,5 +1,5 @@
+use super::gl_wrapper::{ShaderProgram, Vao};
 use gl::types::*;
-use super::gl_wrapper::{Vao, ShaderProgram};
 
 pub struct PostProcessor {
     fbo: GLuint,
@@ -70,13 +70,12 @@ impl PostProcessor {
         let mut quad_vao = Vao::new();
         let vertices: [f32; 30] = [
             // positions        // texCoords
-            -1.0,  1.0, 0.0,   0.0, 1.0,  // Top-left
-            -1.0, -1.0, 0.0,   0.0, 0.0,  // Bottom-left
-             1.0, -1.0, 0.0,   1.0, 0.0,  // Bottom-right
-
-            -1.0,  1.0, 0.0,   0.0, 1.0,  // Top-left
-             1.0, -1.0, 0.0,   1.0, 0.0,  // Bottom-right
-             1.0,  1.0, 0.0,   1.0, 1.0   // Top-right
+            -1.0, 1.0, 0.0, 0.0, 1.0, // Top-left
+            -1.0, -1.0, 0.0, 0.0, 0.0, // Bottom-left
+            1.0, -1.0, 0.0, 1.0, 0.0, // Bottom-right
+            -1.0, 1.0, 0.0, 0.0, 1.0, // Top-left
+            1.0, -1.0, 0.0, 1.0, 0.0, // Bottom-right
+            1.0, 1.0, 0.0, 1.0, 1.0, // Top-right
         ];
         quad_vao.add_vertex_buffer(&vertices, &[(0, 3), (1, 2)]);
 
@@ -104,28 +103,36 @@ impl PostProcessor {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
-            
+
             self.effects_shader.bind();
-            
+
             // Set uniforms
-            self.effects_shader.set_bool("enableBloom", params.enable_bloom);
-            self.effects_shader.set_bool("enableChromatic", params.enable_chromatic);
-            self.effects_shader.set_bool("enableVignette", params.enable_vignette);
-            self.effects_shader.set_float("bloomIntensity", params.bloom_intensity);
-            self.effects_shader.set_float("chromaticStrength", params.chromatic_strength);
-            self.effects_shader.set_float("vignetteIntensity", params.vignette_intensity);
-            self.effects_shader.set_float("vignetteRoundness", params.vignette_roundness);
-            self.effects_shader.set_float("vignetteSmoothness", params.vignette_smoothness);
-            
+            self.effects_shader
+                .set_bool("enableBloom", params.enable_bloom);
+            self.effects_shader
+                .set_bool("enableChromatic", params.enable_chromatic);
+            self.effects_shader
+                .set_bool("enableVignette", params.enable_vignette);
+            self.effects_shader
+                .set_float("bloomIntensity", params.bloom_intensity);
+            self.effects_shader
+                .set_float("chromaticStrength", params.chromatic_strength);
+            self.effects_shader
+                .set_float("vignetteIntensity", params.vignette_intensity);
+            self.effects_shader
+                .set_float("vignetteRoundness", params.vignette_roundness);
+            self.effects_shader
+                .set_float("vignetteSmoothness", params.vignette_smoothness);
+
             // Bind textures
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, self.screen_texture);
             self.effects_shader.set_int("screenTexture", 0);
-            
+
             gl::ActiveTexture(gl::TEXTURE1);
             gl::BindTexture(gl::TEXTURE_2D, bloom_texture);
             self.effects_shader.set_int("bloomTexture", 1);
-            
+
             self.quad_vao.bind();
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
         }
@@ -143,4 +150,4 @@ impl Drop for PostProcessor {
             gl::DeleteTextures(1, &self.screen_texture);
         }
     }
-} 
+}

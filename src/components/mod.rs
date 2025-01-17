@@ -1,11 +1,11 @@
 mod character_stats;
 mod weapon;
 
-pub use character_stats::CharacterStats;
-pub use weapon::Weapon;
 use crate::ecs::Component;
 use crate::graphics::Texture;
-use glam::{Vec2, Vec3, Quat};
+pub use character_stats::CharacterStats;
+use glam::{Quat, Vec2, Vec3};
+pub use weapon::Weapon;
 
 #[derive(Clone)]
 pub struct Transform {
@@ -85,4 +85,4 @@ impl Default for BoxCollider2D {
             is_trigger: false,
         }
     }
-} 
+}

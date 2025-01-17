@@ -1,254 +1,175 @@
-use gl;
-use glam::{Vec2, Vec3, Mat4};
-use image::GenericImageView;
-use super::texture::Texture;
-
-#[derive(Clone)]
-pub struct RendererConfig {
-    pub window_width: u32,
-    pub window_height: u32,
-}
-
-impl Default for RendererConfig {
-    fn default() -> Self {
-        Self {
-            window_width: 800,
-            window_height: 600,
-        }
-    }
-}
+use super::*;
+use crate::platform::PlatformWindow;
+use std::collections::HashMap;
 
 pub struct Renderer {
-    width: u32,
-    height: u32,
-    shader_program: u32,
-    sprite_vao: u32,
-    sprite_vbo: u32,
+    config: RendererConfig,
+    window: Arc<PlatformWindow>,
+    shaders: HashMap<String, Arc<ShaderProgram>>,
+    textures: HashMap<String, Arc<RwLock<Texture>>>,
+    batch_renderer: BatchRenderer,
+    particle_system: ParticleSystem,
+    camera: Camera,
     projection: Mat4,
+    view: Mat4,
 }
 
 impl Renderer {
-    pub fn new(config: &RendererConfig) -> Self {
-        let shader_program = create_shader_program();
-        let (sprite_vao, sprite_vbo) = create_sprite_buffers();
-        
-        let projection = Mat4::orthographic_rh(
-            0.0,
-            config.window_width as f32,
-            config.window_height as f32,
-            0.0,
-            -1.0,
-            1.0
-        );
+    pub fn new(window: &PlatformWindow, config: RendererConfig) -> Self {
+        let batch_renderer = BatchRenderer::new();
+        let particle_system = ParticleSystem::new();
+        let camera = Camera::new(Vec3::new(0.0, 0.0, -10.0), Vec3::ZERO, Vec3::Y);
 
-        unsafe {
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        }
+        let aspect = config.width as f32 / config.height as f32;
+        let projection = Mat4::perspective_rh(45.0f32.to_radians(), aspect, 0.1, 1000.0);
 
         Self {
-            width: config.window_width,
-            height: config.window_height,
-            shader_program,
-            sprite_vao,
-            sprite_vbo,
+            config,
+            window: Arc::new(window.clone()),
+            shaders: HashMap::new(),
+            textures: HashMap::new(),
+            batch_renderer,
+            particle_system,
+            camera,
             projection,
+            view: camera.view_matrix(),
         }
     }
 
-    pub fn begin_frame(&self) {
+    pub fn begin_frame(&mut self) {
         unsafe {
-            gl::ClearColor(0.2, 0.3, 0.3, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::ClearColor(0.1, 0.1, 0.1, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
+
+        self.view = self.camera.view_matrix();
+        self.batch_renderer.begin(self.projection * self.view);
     }
 
-    pub fn end_frame(&self) {
-        // Frame end - buffer swap is handled by the window system
+    pub fn end_frame(&mut self) {
+        self.batch_renderer.flush();
+        self.particle_system.render(&self.projection, &self.view);
+        self.window.swap_buffers();
     }
 
-    pub fn draw_sprite(&self, texture: &Texture, position: Vec2, size: Vec2) {
+    pub fn draw_sprite(
+        &mut self,
+        position: Vec3,
+        size: Vec2,
+        texture: Option<Arc<RwLock<Texture>>>,
+        color: Vec4,
+    ) {
+        self.batch_renderer
+            .draw_sprite(position, size, texture, color);
+    }
+
+    pub fn draw_mesh(&mut self, mesh: &Mesh, transform: Mat4) {
+        let shader = self.get_default_shader();
+        shader.bind();
+        shader.set_mat4("uProjection", &self.projection);
+        shader.set_mat4("uView", &self.view);
+        shader.set_mat4("uModel", &transform);
+
+        if let Some(texture) = &mesh.texture {
+            texture.read().bind(0);
+            shader.set_int("uTexture", 0);
+        }
+
         unsafe {
-            gl::UseProgram(self.shader_program);
-            gl::BindVertexArray(self.sprite_vao);
-            gl::BindTexture(gl::TEXTURE_2D, texture.id);
+            // Create and bind VAO/VBO/EBO
+            let mut vao = 0;
+            let mut vbo = 0;
+            let mut ebo = 0;
 
-            let model = Mat4::from_translation(Vec3::new(position.x, position.y, 0.0))
-                * Mat4::from_scale(Vec3::new(size.x, size.y, 1.0));
+            gl::GenVertexArrays(1, &mut vao);
+            gl::GenBuffers(1, &mut vbo);
+            gl::GenBuffers(1, &mut ebo);
 
-            gl::UniformMatrix4fv(
-                gl::GetUniformLocation(self.shader_program, b"projection\0".as_ptr() as *const _),
+            gl::BindVertexArray(vao);
+
+            // Upload vertex data
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (mesh.vertices.len() * std::mem::size_of::<Vertex>()) as isize,
+                mesh.vertices.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
+
+            // Upload index data
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (mesh.indices.len() * std::mem::size_of::<u32>()) as isize,
+                mesh.indices.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
+
+            // Set up vertex attributes
+            let stride = std::mem::size_of::<Vertex>() as i32;
+
+            // Position
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, stride, 0 as *const _);
+            gl::EnableVertexAttribArray(0);
+
+            // Texture coordinates
+            gl::VertexAttribPointer(
                 1,
+                2,
+                gl::FLOAT,
                 gl::FALSE,
-                self.projection.as_ref().as_ptr(),
+                stride,
+                (3 * std::mem::size_of::<f32>()) as *const _,
             );
-            gl::UniformMatrix4fv(
-                gl::GetUniformLocation(self.shader_program, b"model\0".as_ptr() as *const _),
-                1,
+            gl::EnableVertexAttribArray(1);
+
+            // Color
+            gl::VertexAttribPointer(
+                2,
+                4,
+                gl::FLOAT,
                 gl::FALSE,
-                model.as_ref().as_ptr(),
+                stride,
+                (5 * std::mem::size_of::<f32>()) as *const _,
+            );
+            gl::EnableVertexAttribArray(2);
+
+            // Draw
+            gl::DrawElements(
+                gl::TRIANGLES,
+                mesh.indices.len() as i32,
+                gl::UNSIGNED_INT,
+                0 as *const _,
             );
 
-            gl::DrawArrays(gl::TRIANGLES, 0, 6);
+            // Cleanup
+            gl::DeleteVertexArrays(1, &vao);
+            gl::DeleteBuffers(1, &vbo);
+            gl::DeleteBuffers(1, &ebo);
         }
+    }
+
+    pub fn load_shader(
+        &mut self,
+        name: &str,
+        vertex_src: &str,
+        fragment_src: &str,
+    ) -> Arc<ShaderProgram> {
+        let shader = Arc::new(ShaderProgram::new(vertex_src, fragment_src));
+        self.shaders.insert(name.to_string(), shader.clone());
+        shader
+    }
+
+    pub fn load_texture(&mut self, name: &str, data: &[u8]) -> Arc<RwLock<Texture>> {
+        let texture = Arc::new(RwLock::new(Texture::from_memory(data)));
+        self.textures.insert(name.to_string(), texture.clone());
+        texture
+    }
+
+    fn get_default_shader(&self) -> Arc<ShaderProgram> {
+        self.shaders
+            .get("default")
+            .expect("Default shader not loaded")
+            .clone()
     }
 }
-
-fn create_sprite_buffers() -> (u32, u32) {
-    let vertices: [f32; 24] = [
-        // position    // texcoords
-        0.0, 0.0,     0.0, 0.0,  // bottom left
-        1.0, 0.0,     1.0, 0.0,  // bottom right
-        1.0, 1.0,     1.0, 1.0,  // top right
-        
-        0.0, 0.0,     0.0, 0.0,  // bottom left
-        1.0, 1.0,     1.0, 1.0,  // top right
-        0.0, 1.0,     0.0, 1.0   // top left
-    ];
-
-    let (mut vao, mut vbo) = (0, 0);
-    unsafe {
-        gl::GenVertexArrays(1, &mut vao);
-        gl::GenBuffers(1, &mut vbo);
-        
-        gl::BindVertexArray(vao);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<f32>()) as isize,
-            vertices.as_ptr() as *const _,
-            gl::STATIC_DRAW,
-        );
-
-        // Position attribute
-        gl::EnableVertexAttribArray(0);
-        gl::VertexAttribPointer(
-            0,
-            2,
-            gl::FLOAT,
-            gl::FALSE,
-            4 * std::mem::size_of::<f32>() as i32,
-            std::ptr::null(),
-        );
-        
-        // Texture coords attribute
-        gl::EnableVertexAttribArray(1);
-        gl::VertexAttribPointer(
-            1,
-            2,
-            gl::FLOAT,
-            gl::FALSE,
-            4 * std::mem::size_of::<f32>() as i32,
-            (2 * std::mem::size_of::<f32>()) as *const _,
-        );
-    }
-    
-    (vao, vbo)
-}
-
-fn create_shader_program() -> u32 {
-    let vertex_shader = r#"
-        #version 330 core
-        layout (location = 0) in vec2 aPos;
-        layout (location = 1) in vec2 aTexCoord;
-        
-        uniform mat4 projection;
-        uniform mat4 model;
-        
-        out vec2 TexCoord;
-        
-        void main() {
-            gl_Position = projection * model * vec4(aPos, 0.0, 1.0);
-            TexCoord = aTexCoord;
-        }
-    "#;
-
-    let fragment_shader = r#"
-        #version 330 core
-        in vec2 TexCoord;
-        
-        uniform sampler2D texture1;
-        
-        out vec4 FragColor;
-        
-        void main() {
-            FragColor = texture(texture1, TexCoord);
-        }
-    "#;
-
-    unsafe {
-        // Create vertex shader
-        let vertex = gl::CreateShader(gl::VERTEX_SHADER);
-        let c_str = std::ffi::CString::new(vertex_shader.as_bytes()).unwrap();
-        gl::ShaderSource(vertex, 1, &c_str.as_ptr(), std::ptr::null());
-        gl::CompileShader(vertex);
-        check_shader_errors(vertex, "vertex");
-
-        // Create fragment shader
-        let fragment = gl::CreateShader(gl::FRAGMENT_SHADER);
-        let c_str = std::ffi::CString::new(fragment_shader.as_bytes()).unwrap();
-        gl::ShaderSource(fragment, 1, &c_str.as_ptr(), std::ptr::null());
-        gl::CompileShader(fragment);
-        check_shader_errors(fragment, "fragment");
-
-        // Create shader program
-        let program = gl::CreateProgram();
-        gl::AttachShader(program, vertex);
-        gl::AttachShader(program, fragment);
-        gl::LinkProgram(program);
-        check_program_errors(program);
-
-        // Delete shaders
-        gl::DeleteShader(vertex);
-        gl::DeleteShader(fragment);
-
-        program
-    }
-}
-
-fn check_shader_errors(shader: u32, shader_type: &str) {
-    unsafe {
-        let mut success = 0;
-        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
-        if success == 0 {
-            let mut len = 0;
-            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
-            let mut info_log = Vec::with_capacity(len as usize);
-            info_log.set_len((len as usize) - 1);
-            gl::GetShaderInfoLog(
-                shader,
-                len,
-                std::ptr::null_mut(),
-                info_log.as_mut_ptr() as *mut gl::types::GLchar,
-            );
-            panic!(
-                "Failed to compile {} shader: {}",
-                shader_type,
-                std::str::from_utf8(&info_log).unwrap()
-            );
-        }
-    }
-}
-
-fn check_program_errors(program: u32) {
-    unsafe {
-        let mut success = 0;
-        gl::GetProgramiv(program, gl::LINK_STATUS, &mut success);
-        if success == 0 {
-            let mut len = 0;
-            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
-            let mut info_log = Vec::with_capacity(len as usize);
-            info_log.set_len((len as usize) - 1);
-            gl::GetProgramInfoLog(
-                program,
-                len,
-                std::ptr::null_mut(),
-                info_log.as_mut_ptr() as *mut gl::types::GLchar,
-            );
-            panic!(
-                "Failed to link shader program: {}",
-                std::str::from_utf8(&info_log).unwrap()
-            );
-        }
-    }
-} 

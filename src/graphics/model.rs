@@ -1,5 +1,5 @@
-use cgmath::{Matrix4, Vector3, Point3, EuclideanSpace};
 use super::texture::Texture;
+use cgmath::{EuclideanSpace, Matrix4, Point3, Vector3};
 
 pub struct Material {
     pub diffuse_texture: Option<Texture>,
@@ -19,12 +19,15 @@ pub struct Model {
 impl Model {
     pub fn new(vertices: Vec<f32>, indices: Vec<u32>, material: Material) -> Self {
         let mut vao = super::gl_wrapper::Vao::new();
-        vao.add_vertex_buffer(&vertices, &[
-            (0, 3), // position
-            (1, 3), // normal
-            (2, 2), // texture coordinates
-        ]);
-        
+        vao.add_vertex_buffer(
+            &vertices,
+            &[
+                (0, 3), // position
+                (1, 3), // normal
+                (2, 2), // texture coordinates
+            ],
+        );
+
         unsafe {
             let mut ebo = 0;
             gl::GenBuffers(1, &mut ebo);
@@ -71,7 +74,7 @@ impl Model {
 
     pub fn draw(&self, shader: &mut super::gl_wrapper::ShaderProgram) {
         shader.bind();
-        
+
         // Set material properties
         if let Some(ref texture) = self.material.diffuse_texture {
             texture.bind();
@@ -82,10 +85,10 @@ impl Model {
             shader.set_int("material.specular", 1);
         }
         shader.set_float("material.shininess", self.material.shininess);
-        
+
         shader.set_matrix4fv_uniform("model", &self.get_model_matrix());
         self.vao.bind();
-        
+
         unsafe {
             gl::DrawElements(
                 gl::TRIANGLES,
@@ -94,8 +97,8 @@ impl Model {
                 std::ptr::null(),
             );
         }
-        
+
         super::gl_wrapper::Vao::unbind();
         super::gl_wrapper::ShaderProgram::unbind();
     }
-} 
+}

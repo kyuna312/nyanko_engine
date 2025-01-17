@@ -33,8 +33,8 @@ impl Weapon {
     }
 
     pub fn can_shoot(&self, current_time: f32) -> bool {
-        !self.is_reloading 
-            && self.current_ammo > 0 
+        !self.is_reloading
+            && self.current_ammo > 0
             && current_time - self.last_shot_time >= 1.0 / self.fire_rate
     }
 
@@ -64,4 +64,4 @@ impl Weapon {
             }
         }
     }
-} 
+}

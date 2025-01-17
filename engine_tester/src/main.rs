@@ -1,5 +1,5 @@
-use nyanko_engine::graphics::window::Window;
 use gl::types::*;
+use nyanko_engine::graphics::window::Window;
 
 fn main() {
     let mut window = Window::new(800, 600, "Nyanko Engine");

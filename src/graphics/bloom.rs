@@ -10,23 +10,18 @@ pub struct BloomProcessor {
 
 impl BloomProcessor {
     pub fn new(width: u32, height: u32) -> Self {
-        let shader = ShaderProgram::new(
-            "assets/shaders/bloom.vert",
-            "assets/shaders/bloom.frag"
-        );
+        let shader = ShaderProgram::new("assets/shaders/bloom.vert", "assets/shaders/bloom.frag");
 
         let mut vao = Vao::new();
         let vertices: [f32; 20] = [
-            1.0,  1.0, 0.0,   1.0, 1.0,
-            -1.0,  1.0, 0.0,   0.0, 1.0,
-            -1.0, -1.0, 0.0,   0.0, 0.0,
-            1.0, -1.0, 0.0,   1.0, 0.0,
+            1.0, 1.0, 0.0, 1.0, 1.0, -1.0, 1.0, 0.0, 0.0, 1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0,
+            -1.0, 0.0, 1.0, 0.0,
         ];
         vao.add_vertex_buffer(&vertices, &[(0, 3), (1, 2)]);
 
         let bright_texture = Texture::new_empty(width, height);
         let mut blur_textures = Vec::new();
-        
+
         // Create mip chain for bloom
         let mip_levels = 5;
         for i in 0..mip_levels {
@@ -47,11 +42,11 @@ impl BloomProcessor {
         self.shader.bind();
         self.shader.set_int("inputTexture", 0);
         self.shader.set_float("threshold", settings.threshold);
-        
+
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, input_texture);
         }
-        
+
         self.bright_texture.id()
     }
 }
@@ -70,4 +65,4 @@ impl Default for BloomSettings {
             intensity: 1.2,
         }
     }
-} 
+}

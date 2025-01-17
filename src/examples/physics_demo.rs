@@ -1,10 +1,10 @@
-use glam::Vec2;
 use crate::physics::{PhysicsWorld, RigidBody};
 use crate::renderer::{Renderer, Sprite};
+use glam::Vec2;
 
 pub struct PhysicsDemo {
     physics_world: PhysicsWorld,
-    boxes: Vec<u32>,  // Store body IDs
+    boxes: Vec<u32>, // Store body IDs
     ground_id: u32,
     ball_id: u32,
     elapsed_time: f32,
@@ -16,17 +16,17 @@ impl PhysicsDemo {
 
         // Create ground
         let ground = RigidBody::new(
-            Vec2::new(0.0, -200.0),  // position
-            f32::INFINITY,           // infinite mass (immovable)
-            Vec2::new(800.0, 20.0)   // size
+            Vec2::new(0.0, -200.0), // position
+            f32::INFINITY,          // infinite mass (immovable)
+            Vec2::new(800.0, 20.0), // size
         );
         let ground_id = physics_world.add_body(ground);
 
         // Create bouncing ball
         let ball = RigidBody::new(
-            Vec2::new(0.0, 200.0),   // start from top
-            1.0,                      // mass
-            Vec2::new(20.0, 20.0)    // size
+            Vec2::new(0.0, 200.0), // start from top
+            1.0,                   // mass
+            Vec2::new(20.0, 20.0), // size
         );
         let ball_id = physics_world.add_body(ball);
 
@@ -35,12 +35,9 @@ impl PhysicsDemo {
         for i in 0..5 {
             for j in 0..5 {
                 let box_body = RigidBody::new(
-                    Vec2::new(
-                        -100.0 + (j as f32 * 45.0),
-                        -150.0 + (i as f32 * 45.0)
-                    ),
-                    1.0,                          // mass
-                    Vec2::new(40.0, 40.0)         // size
+                    Vec2::new(-100.0 + (j as f32 * 45.0), -150.0 + (i as f32 * 45.0)),
+                    1.0,                   // mass
+                    Vec2::new(40.0, 40.0), // size
                 );
                 boxes.push(physics_world.add_body(box_body));
             }
@@ -61,10 +58,7 @@ impl PhysicsDemo {
         // Add some interactive forces
         if let Some(ball) = self.physics_world.get_body_mut(self.ball_id) {
             // Add sinusoidal horizontal force to the ball
-            let force = Vec2::new(
-                500.0 * (self.elapsed_time * 2.0).sin(),
-                0.0
-            );
+            let force = Vec2::new(500.0 * (self.elapsed_time * 2.0).sin(), 0.0);
             ball.apply_force(force);
         }
 
@@ -178,4 +172,4 @@ fn main() {
         demo.render(&mut renderer);
         renderer.end_frame();
     }
-} 
+}

@@ -1,33 +1,64 @@
+use parking_lot::RwLock;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use std::any::{Any, TypeId};
+use std::path::PathBuf;
+use std::sync::Arc;
+
+pub struct Resource {
+    pub path: PathBuf,
+    pub data: Vec<u8>,
+    pub loaded: bool,
+}
 
 pub struct ResourceManager {
-    resources: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
+    resources: HashMap<String, Arc<RwLock<Resource>>>,
+    base_path: PathBuf,
 }
 
 impl ResourceManager {
     pub fn new() -> Self {
         Self {
             resources: HashMap::new(),
+            base_path: PathBuf::from("assets"),
         }
     }
 
-    pub fn add<T: 'static + Send + Sync>(&mut self, resource: T) {
-        self.resources.insert(TypeId::of::<T>(), Box::new(resource));
+    pub fn load<P: AsRef<std::path::Path>>(&mut self, path: P) -> Arc<RwLock<Resource>> {
+        let path_str = path.as_ref().to_string_lossy().to_string();
+
+        if let Some(resource) = self.resources.get(&path_str) {
+            return resource.clone();
+        }
+
+        let full_path = self.base_path.join(&path);
+        let resource = Arc::new(RwLock::new(Resource {
+            path: full_path.clone(),
+            data: Vec::new(),
+            loaded: false,
+        }));
+
+        self.resources.insert(path_str, resource.clone());
+
+        // Load resource asynchronously
+        let resource_clone = resource.clone();
+        std::thread::spawn(move || {
+            if let Ok(data) = std::fs::read(&full_path) {
+                let mut resource = resource_clone.write();
+                resource.data = data;
+                resource.loaded = true;
+            }
+        });
+
+        resource
     }
 
-    pub fn get<T: 'static + Send + Sync>(&self) -> Option<&T> {
+    pub fn get<P: AsRef<std::path::Path>>(&self, path: P) -> Option<Arc<RwLock<Resource>>> {
         self.resources
-            .get(&TypeId::of::<T>())
-            .and_then(|r| r.downcast_ref::<T>())
+            .get(&path.as_ref().to_string_lossy().to_string())
+            .cloned()
     }
 
-    pub fn get_mut<T: 'static + Send + Sync>(&mut self) -> Option<&mut T> {
+    pub fn unload<P: AsRef<std::path::Path>>(&mut self, path: P) {
         self.resources
-            .get_mut(&TypeId::of::<T>())
-            .and_then(|r| r.downcast_mut::<T>())
+            .remove(&path.as_ref().to_string_lossy().to_string());
     }
 }
-
-pub type SharedResourceManager = Arc<RwLock<ResourceManager>>; 

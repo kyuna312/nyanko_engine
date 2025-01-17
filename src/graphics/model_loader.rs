@@ -1,11 +1,11 @@
+use super::model::{Material, Model};
+use super::texture::Texture;
 use std::path::Path;
 use tobj;
-use super::model::{Model, Material};
-use super::texture::Texture;
 
 pub fn load_model(path: &str) -> Result<Model, String> {
     let obj_path = Path::new(path);
-    
+
     if !obj_path.exists() {
         return Err(format!("Model file not found: {}", path));
     }
@@ -17,7 +17,8 @@ pub fn load_model(path: &str) -> Result<Model, String> {
             single_index: true,
             ..Default::default()
         },
-    ).map_err(|e| format!("Failed to load OBJ file: {}", e))?;
+    )
+    .map_err(|e| format!("Failed to load OBJ file: {}", e))?;
 
     if models.is_empty() {
         return Err("No models found in the OBJ file".to_string());
@@ -75,4 +76,4 @@ pub fn load_model(path: &str) -> Result<Model, String> {
     };
 
     Ok(Model::new(vertices, indices, material))
-} 
+}

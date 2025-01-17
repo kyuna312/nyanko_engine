@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use parking_lot::RwLock;
 use lru::LruCache;
+use parking_lot::RwLock;
+use std::sync::Arc;
 
 pub struct AssetManager {
     textures: Arc<RwLock<LruCache<String, Texture>>>,
@@ -21,7 +21,7 @@ impl AssetManager {
         if let Some(texture) = self.textures.read().get(path) {
             return Some(Arc::new(texture.clone()));
         }
-        
+
         // Load texture if not in cache
         if let Ok(texture) = Texture::load(path) {
             self.textures.write().put(path.to_string(), texture.clone());
@@ -29,4 +29,4 @@ impl AssetManager {
         }
         None
     }
-} 
+}

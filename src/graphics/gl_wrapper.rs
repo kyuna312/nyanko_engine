@@ -1,7 +1,7 @@
+use cgmath::{Matrix, Matrix4, Vector2, Vector3, Vector4};
 use gl::types::*;
 use std::ffi::CString;
 use std::fs;
-use cgmath::{Vector2, Vector3, Vector4, Matrix4, Matrix};
 
 pub struct Vao {
     id: GLuint,
@@ -26,11 +26,15 @@ impl Vao {
         }
     }
 
-    pub fn add_vertex_buffer(&mut self, data: &[f32], attributes: &[(GLuint, GLint)]) -> &BufferObject {
+    pub fn add_vertex_buffer(
+        &mut self,
+        data: &[f32],
+        attributes: &[(GLuint, GLint)],
+    ) -> &BufferObject {
         self.bind();
         let vbo = BufferObject::new();
         vbo.bind();
-        
+
         unsafe {
             gl::BufferData(
                 gl::ARRAY_BUFFER,
@@ -40,8 +44,11 @@ impl Vao {
             );
 
             let mut offset: usize = 0;
-            let stride = attributes.iter().map(|(_, size)| *size as usize).sum::<usize>();
-            
+            let stride = attributes
+                .iter()
+                .map(|(_, size)| *size as usize)
+                .sum::<usize>();
+
             for &(location, size) in attributes {
                 gl::EnableVertexAttribArray(location);
                 gl::VertexAttribPointer(
@@ -75,10 +82,14 @@ pub struct ShaderProgram {
 
 impl ShaderProgram {
     pub fn new(vertex_path: &str, fragment_path: &str) -> Self {
-        let vertex_source = fs::read_to_string(vertex_path)
-            .expect(&format!("Failed to read vertex shader from {}", vertex_path));
-        let fragment_source = fs::read_to_string(fragment_path)
-            .expect(&format!("Failed to read fragment shader from {}", fragment_path));
+        let vertex_source = fs::read_to_string(vertex_path).expect(&format!(
+            "Failed to read vertex shader from {}",
+            vertex_path
+        ));
+        let fragment_source = fs::read_to_string(fragment_path).expect(&format!(
+            "Failed to read fragment shader from {}",
+            fragment_path
+        ));
 
         unsafe {
             let vertex_shader = Self::compile_shader(&vertex_source, gl::VERTEX_SHADER);
@@ -103,11 +114,11 @@ impl ShaderProgram {
                     std::ptr::null_mut(),
                     info_log.as_mut_ptr() as *mut GLchar,
                 );
-                
+
                 // Print shader sources for debugging
                 println!("Vertex Shader Source:\n{}", vertex_source);
                 println!("Fragment Shader Source:\n{}", fragment_source);
-                
+
                 panic!(
                     "Shader program linking failed: {}\nVertex path: {}\nFragment path: {}",
                     String::from_utf8_lossy(&info_log),
@@ -172,7 +183,7 @@ impl ShaderProgram {
             gl::Uniform2f(
                 gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 value.x,
-                value.y
+                value.y,
             );
         }
     }
@@ -184,7 +195,7 @@ impl ShaderProgram {
                 gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 value.x,
                 value.y,
-                value.z
+                value.z,
             );
         }
     }
@@ -197,7 +208,7 @@ impl ShaderProgram {
                 value.x,
                 value.y,
                 value.z,
-                value.w
+                value.w,
             );
         }
     }
@@ -207,7 +218,7 @@ impl ShaderProgram {
         unsafe {
             gl::Uniform1i(
                 gl::GetUniformLocation(self.id, c_name.as_ptr()),
-                value as i32
+                value as i32,
             );
         }
     }
@@ -215,20 +226,14 @@ impl ShaderProgram {
     pub fn set_int(&self, name: &str, value: i32) {
         let c_name = CString::new(name).unwrap();
         unsafe {
-            gl::Uniform1i(
-                gl::GetUniformLocation(self.id, c_name.as_ptr()),
-                value
-            );
+            gl::Uniform1i(gl::GetUniformLocation(self.id, c_name.as_ptr()), value);
         }
     }
 
     pub fn set_float(&self, name: &str, value: f32) {
         let c_name = CString::new(name).unwrap();
         unsafe {
-            gl::Uniform1f(
-                gl::GetUniformLocation(self.id, c_name.as_ptr()),
-                value
-            );
+            gl::Uniform1f(gl::GetUniformLocation(self.id, c_name.as_ptr()), value);
         }
     }
 
@@ -239,7 +244,7 @@ impl ShaderProgram {
                 gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 1,
                 gl::FALSE,
-                value.as_ptr()
+                value.as_ptr(),
             );
         }
     }

@@ -1,6 +1,6 @@
-use std::time::Duration;
 use super::texture::Texture;
 use glam::Vec2;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct AnimationFrame {
@@ -62,4 +62,4 @@ impl Animation {
         self.current_frame = 0;
         self.time_accumulated = Duration::ZERO;
     }
-} 
+}

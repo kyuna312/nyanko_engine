@@ -8,12 +8,13 @@ impl Renderer {
     // Batch similar draw calls
     pub fn batch_draw(&mut self, sprites: &[Sprite]) {
         let mut batches: HashMap<TextureId, Vec<Sprite>> = HashMap::new();
-        
+
         // Group sprites by texture
         for sprite in sprites {
-            batches.entry(sprite.texture_id)
-                   .or_default()
-                   .push(sprite.clone());
+            batches
+                .entry(sprite.texture_id)
+                .or_default()
+                .push(sprite.clone());
         }
 
         // Draw each batch
@@ -22,4 +23,4 @@ impl Renderer {
             self.draw_batch(&batch);
         }
     }
-} 
+}

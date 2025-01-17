@@ -1,108 +1,77 @@
-use crate::graphics::gl_wrapper::{ShaderProgram, Vao};
-use cgmath::{Vector2, Vector4};
-use gl::types::*;
+mod layout;
+mod renderer;
+mod style;
+mod widget;
 
-pub struct UiManager {
-    shader: ShaderProgram,
-    quad_vao: Vao,
-    elements: Vec<UiElement>,
+use glam::{Vec2, Vec4};
+use parking_lot::RwLock;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+pub use layout::{Constraint, Layout, LayoutType};
+pub use renderer::UIRenderer;
+pub use style::{Style, StyleSheet};
+pub use widget::{Widget, WidgetState, WidgetType};
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Rect {
+    pub position: Vec2,
+    pub size: Vec2,
 }
 
-pub struct UiElement {
-    pub position: Vector2<f32>,
-    pub size: Vector2<f32>,
-    pub color: Vector4<f32>,
-    pub texture_id: Option<GLuint>,
-    pub is_visible: bool,
-}
-
-impl UiManager {
-    pub fn new() -> Self {
-        let shader = ShaderProgram::new(
-            "assets/shaders/ui.vert",
-            "assets/shaders/ui.frag",
-        );
-
-        let mut quad_vao = Vao::new();
-        let vertices: [f32; 24] = [
-            // pos      // tex
-            0.0, 1.0,   0.0, 1.0,
-            0.0, 0.0,   0.0, 0.0,
-            1.0, 0.0,   1.0, 0.0,
-            0.0, 1.0,   0.0, 1.0,
-            1.0, 0.0,   1.0, 0.0,
-            1.0, 1.0,   1.0, 1.0,
-        ];
-        quad_vao.add_vertex_buffer(&vertices, &[(0, 2), (1, 2)]);
-
-        UiManager {
-            shader,
-            quad_vao,
-            elements: Vec::new(),
-        }
+impl Rect {
+    pub fn new(position: Vec2, size: Vec2) -> Self {
+        Self { position, size }
     }
 
-    pub fn add_element(&mut self, element: UiElement) -> usize {
-        self.elements.push(element);
-        self.elements.len() - 1
-    }
-
-    pub fn render(&mut self, window_width: u32, window_height: u32) {
-        unsafe {
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        }
-
-        self.shader.bind();
-        self.shader.set_vector2f(
-            "screenSize",
-            &Vector2::new(window_width as f32, window_height as f32)
-        );
-
-        for element in &self.elements {
-            if !element.is_visible {
-                continue;
-            }
-
-            self.shader.set_vector2f("position", &element.position);
-            self.shader.set_vector2f("size", &element.size);
-            self.shader.set_vector4f("color", &element.color);
-
-            if let Some(texture_id) = element.texture_id {
-                self.shader.set_bool("hasTexture", true);
-                unsafe {
-                    gl::ActiveTexture(gl::TEXTURE0);
-                    gl::BindTexture(gl::TEXTURE_2D, texture_id);
-                }
-            } else {
-                self.shader.set_bool("hasTexture", false);
-            }
-
-            self.quad_vao.bind();
-            unsafe {
-                gl::DrawArrays(gl::TRIANGLES, 0, 6);
-            }
-        }
-    }
-
-    pub fn get_element_mut(&mut self, index: usize) -> Option<&mut UiElement> {
-        self.elements.get_mut(index)
+    pub fn contains(&self, point: Vec2) -> bool {
+        point.x >= self.position.x
+            && point.x <= self.position.x + self.size.x
+            && point.y >= self.position.y
+            && point.y <= self.position.y + self.size.y
     }
 }
 
-impl UiElement {
-    pub fn new(position: Vector2<f32>, size: Vector2<f32>, color: Vector4<f32>) -> Self {
-        UiElement {
-            position,
-            size,
-            color,
-            texture_id: None,
-            is_visible: true,
+#[derive(Debug, Clone)]
+pub struct UIContext {
+    pub screen_size: Vec2,
+    pub scale_factor: f32,
+    pub mouse_position: Vec2,
+    pub pressed: bool,
+    pub hovered_widget: Option<u64>,
+    pub active_widget: Option<u64>,
+    pub focused_widget: Option<u64>,
+}
+
+#[derive(Debug)]
+pub struct Theme {
+    pub font: String,
+    pub font_size: f32,
+    pub text_color: Vec4,
+    pub primary_color: Vec4,
+    pub secondary_color: Vec4,
+    pub background_color: Vec4,
+    pub border_color: Vec4,
+    pub border_width: f32,
+    pub corner_radius: f32,
+    pub padding: Vec2,
+    pub spacing: Vec2,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            font: "default".to_string(),
+            font_size: 16.0,
+            text_color: Vec4::new(1.0, 1.0, 1.0, 1.0),
+            primary_color: Vec4::new(0.2, 0.6, 1.0, 1.0),
+            secondary_color: Vec4::new(0.5, 0.5, 0.5, 1.0),
+            background_color: Vec4::new(0.1, 0.1, 0.1, 0.9),
+            border_color: Vec4::new(0.3, 0.3, 0.3, 1.0),
+            border_width: 1.0,
+            corner_radius: 4.0,
+            padding: Vec2::new(8.0, 8.0),
+            spacing: Vec2::new(4.0, 4.0),
         }
     }
-
-    pub fn with_texture(mut self, texture_id: GLuint) -> Self {
-        self.texture_id = Some(texture_id);
-        self
-    }
-} 
+}

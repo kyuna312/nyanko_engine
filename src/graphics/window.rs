@@ -1,5 +1,5 @@
-use glfw::{Action, Key, WindowEvent};
 use glfw::Context;
+use glfw::{Action, Key, WindowEvent};
 
 /// # Window
 ///
@@ -24,18 +24,17 @@ impl Window {
     /// Create new window with settings
     pub fn new(width: u32, height: u32, title: &str) -> Result<Self, String> {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-        
+
         glfw.window_hint(glfw::WindowHint::ContextVersion(4, 1));
-        glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+        glfw.window_hint(glfw::WindowHint::OpenGlProfile(
+            glfw::OpenGlProfileHint::Core,
+        ));
         #[cfg(target_os = "macos")]
         glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
-        let (mut window, events) = glfw.create_window(
-            width,
-            height,
-            title,
-            glfw::WindowMode::Windowed
-        ).expect("Failed to create GLFW window");
+        let (mut window, events) = glfw
+            .create_window(width, height, title, glfw::WindowMode::Windowed)
+            .expect("Failed to create GLFW window");
 
         window.make_current();
         window.set_key_polling(true);
@@ -71,13 +70,13 @@ impl Window {
     pub fn update(&mut self) {
         self.window_handle.swap_buffers();
         self.glfw.poll_events();
-        
+
         for (_, event) in glfw::flush_messages(&self.events) {
             match event {
                 WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     self.window_handle.set_should_close(true)
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }

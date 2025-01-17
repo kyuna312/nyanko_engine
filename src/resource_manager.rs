@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::sync::Mutex;
-use lazy_static::lazy_static;
 use crate::graphics::{ShaderProgram, Texture};
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::Mutex;
 
 lazy_static! {
     static ref RESOURCE_MANAGER: Mutex<ResourceManager> = Mutex::new(ResourceManager::new());
@@ -30,4 +30,4 @@ impl ResourceManager {
         let manager = RESOURCE_MANAGER.lock().unwrap();
         manager.textures.get(name).map(Rc::clone)
     }
-} 
+}

@@ -33,7 +33,7 @@ impl CharacterStats {
     pub fn add_exp(&mut self, exp: u32) -> bool {
         self.exp += exp;
         let exp_needed = self.level * 100;
-        
+
         if self.exp >= exp_needed {
             self.level_up();
             true
@@ -70,4 +70,4 @@ impl CharacterStats {
             false
         }
     }
-} 
+}

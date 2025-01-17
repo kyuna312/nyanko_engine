@@ -33,4 +33,4 @@ impl<T: Default> ObjectPool<T> {
     pub fn recycle(&mut self, object: T) {
         self.available.push_back(object);
     }
-} 
+}
