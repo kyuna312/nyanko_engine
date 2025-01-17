@@ -1,6 +1,6 @@
-use super::{Camera, ParticleSystem, Shader, Texture, Vertex};
+use super::{Camera, ParticleSystem, Shader, Texture};
 use crate::platform::PlatformWindow;
-use glam::{Mat4, Vec3};
+use glam::Vec3;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;

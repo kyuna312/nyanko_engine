@@ -28,8 +28,19 @@ setup_macos_env() {
 # Clean project
 clean_project() {
     echo -e "${YELLOW}Cleaning project...${NC}"
-    rm -rf target/
-    rm -rf examples/
+    if [ -d "target" ]; then
+        # Use sudo only if necessary
+        if ! rm -rf target/ 2>/dev/null; then
+            echo -e "${YELLOW}Requesting permission to remove target directory...${NC}"
+            sudo rm -rf target/
+        fi
+    fi
+
+    if [ -d "examples" ]; then
+        rm -rf examples/
+    fi
+
+    # Use cargo clean without removing target directory
     cargo clean
 }
 
@@ -37,10 +48,13 @@ clean_project() {
 create_structure() {
     echo -e "${YELLOW}Creating project structure...${NC}"
 
-    # Create directories
+    # Create directories with proper permissions
     mkdir -p src/{core,graphics,input,utils,platform,math}
     mkdir -p examples/basic
     mkdir -p tests
+
+    # Set proper permissions
+    chmod -R 755 src examples tests
 
     # Create source files
     create_source_files
@@ -71,22 +85,62 @@ pub use platform::*;
 pub use math::*;
 EOF
 
-    # Create other module files
-    # ... (Add other file creation commands)
+    # Set proper permissions for created files
+    chmod 644 src/lib.rs
 }
 
 # Create example files
 create_example_files() {
     echo -e "${YELLOW}Creating example files...${NC}"
 
+    # Ensure the directory exists
+    mkdir -p examples/basic
+
     # Create basic window example
     cat > examples/basic/window.rs << 'EOF'
-use nyanko_engine::*;
+use winit::event_loop::EventLoop;
+use nyanko_engine::platform::PlatformWindow;
 
 fn main() {
-    println!("Basic window example");
+    let event_loop = EventLoop::new();
+    let window = winit::window::Window::new(&event_loop).unwrap();
+    let _platform_window = PlatformWindow::new(window);
+
+    println!("Basic window example initialized");
 }
 EOF
+
+    # Create basic graphics example
+    cat > examples/basic/graphics.rs << 'EOF'
+use nyanko_engine::graphics::{Renderer, RendererConfig};
+use nyanko_engine::platform::PlatformWindow;
+use winit::event_loop::EventLoop;
+
+fn main() {
+    let event_loop = EventLoop::new();
+    let window = winit::window::Window::new(&event_loop).unwrap();
+    let platform_window = PlatformWindow::new(window);
+    let config = RendererConfig::default();
+    let _renderer = Renderer::new(platform_window, config);
+
+    println!("Basic graphics example initialized");
+}
+EOF
+
+    # Create basic input example
+    cat > examples/basic/input.rs << 'EOF'
+use nyanko_engine::input::PlatformInput;
+
+fn main() {
+    let mut input = PlatformInput::new();
+    input.update();
+
+    println!("Basic input example initialized");
+}
+EOF
+
+    # Set proper permissions
+    chmod 644 examples/basic/*.rs
 }
 
 # Create test files
@@ -102,6 +156,9 @@ fn test_basic() {
     assert!(true);
 }
 EOF
+
+    # Set proper permissions
+    chmod 644 tests/lib.rs
 }
 
 # Run tests
@@ -131,6 +188,11 @@ setup_project() {
 
 # Main execution
 main() {
+    # Ensure script has execute permissions
+    if [ ! -x "$0" ]; then
+        chmod +x "$0"
+    fi
+
     case "$1" in
         "setup")
             setup_macos_env

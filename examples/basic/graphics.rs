@@ -6,9 +6,8 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = winit::window::Window::new(&event_loop).unwrap();
     let platform_window = PlatformWindow::new(window);
-
     let config = RendererConfig::default();
-    let mut renderer = Renderer::new(platform_window, config);
+    let _renderer = Renderer::new(platform_window, config);
 
-    println!("Nyanko Engine initialized");
+    println!("Basic graphics example initialized");
 }

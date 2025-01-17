@@ -1,6 +1,4 @@
 use image::DynamicImage;
-use parking_lot::RwLock;
-use std::sync::Arc;
 
 pub struct Texture {
     id: u32,

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 #[cfg(target_os = "macos")]
-use core_graphics as cg;
+use core_graphics;
 
 pub struct PlatformInput {
     keyboard_state: HashMap<u32, bool>,

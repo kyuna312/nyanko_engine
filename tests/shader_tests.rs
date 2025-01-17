@@ -1,41 +1,48 @@
-use nyanko_engine::graphics::shader::{fs, vs, Shader};
-use vulkano::device::Device;
-use vulkano::device::DeviceCreateInfo;
-use vulkano::device::QueueCreateInfo;
-use vulkano::instance::Instance;
+use glutin::{dpi::PhysicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder};
+use nyanko_engine::graphics::Shader;
+
+fn create_context() -> (
+    EventLoop<()>,
+    glutin::WindowedContext<glutin::PossiblyCurrent>,
+) {
+    let el = EventLoop::new();
+    let wb = WindowBuilder::new()
+        .with_visible(false)
+        .with_inner_size(PhysicalSize::new(1, 1));
+
+    let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
+
+    let windowed_context = unsafe {
+        windowed_context
+            .make_current()
+            .expect("Failed to make context current")
+    };
+
+    gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
+
+    (el, windowed_context)
+}
 
 #[test]
-fn test_shader_compilation() {
-    // Create instance
-    let instance = Instance::new(Default::default()).unwrap();
+fn test_shader_creation() {
+    let (_el, _context) = create_context();
 
-    // Get physical device
-    let physical = instance
-        .enumerate_physical_devices()
-        .unwrap()
-        .next()
-        .unwrap();
+    let vertex_shader = r#"
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+        void main() {
+            gl_Position = vec4(aPos, 1.0);
+        }
+    "#;
 
-    // Create device
-    let queue_family = physical
-        .queue_families()
-        .find(|&q| q.supports_graphics())
-        .unwrap();
+    let fragment_shader = r#"
+        #version 330 core
+        out vec4 FragColor;
+        void main() {
+            FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+        }
+    "#;
 
-    let (device, _) = Device::new(
-        physical,
-        DeviceCreateInfo {
-            queue_create_infos: vec![QueueCreateInfo::family(queue_family)],
-            ..Default::default()
-        },
-    )
-    .unwrap();
-
-    // Test vertex shader
-    let vert = vs::load(device.clone()).unwrap();
-    assert!(vert.entry_point("main").is_some());
-
-    // Test fragment shader
-    let frag = fs::load(device.clone()).unwrap();
-    assert!(frag.entry_point("main").is_some());
+    let shader = Shader::new(vertex_shader, fragment_shader);
+    assert!(shader.is_ok(), "Shader creation should succeed");
 }

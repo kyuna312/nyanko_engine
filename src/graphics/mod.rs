@@ -13,7 +13,3 @@ pub use renderer::{Renderer, RendererConfig};
 pub use shader::Shader;
 pub use texture::Texture;
 pub use vertex::Vertex;
-
-use glam::{Mat4, Vec2, Vec3, Vec4};
-use parking_lot::RwLock;
-use std::sync::Arc;
