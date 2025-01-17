@@ -1,6 +1,6 @@
+use glutin::event_loop::EventLoop;
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
-use glutin::event_loop::EventLoop;
 
 pub struct Window {
     pub context: glutin::WindowedContext<glutin::PossiblyCurrent>,
@@ -19,7 +19,8 @@ impl Window {
             .expect("Failed to create context");
 
         let context = unsafe {
-            context.make_current()
+            context
+                .make_current()
                 .expect("Failed to make context current")
         };
 

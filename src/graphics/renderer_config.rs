@@ -2,35 +2,21 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
 pub struct RendererConfig {
-    pub api: RenderAPI,
+    pub width: u32,
+    pub height: u32,
     pub vsync: bool,
-    pub msaa_samples: u8,
-    pub shader_path: PathBuf,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum RenderAPI {
-    OpenGL,
-    #[cfg(target_os = "windows")]
-    DirectX11,
-    #[cfg(target_os = "macos")]
-    Metal,
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
-    Vulkan,
+    pub msaa_samples: u32,
+    pub shader_path: String,
 }
 
 impl Default for RendererConfig {
     fn default() -> Self {
         Self {
-            #[cfg(target_os = "macos")]
-            api: RenderAPI::Metal,
-            #[cfg(target_os = "windows")]
-            api: RenderAPI::DirectX11,
-            #[cfg(target_os = "linux")]
-            api: RenderAPI::OpenGL,
+            width: 800,
+            height: 600,
             vsync: true,
             msaa_samples: 4,
-            shader_path: PathBuf::from("shaders"),
+            shader_path: "shaders".to_string(),
         }
     }
 }
