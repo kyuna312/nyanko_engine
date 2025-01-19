@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-glutin = "0.29"
+glutin = { version = "0.30", features = ["wayland", "x11", "egl"] }
 gl = "0.14"
 winit = "0.27"
-raw-window-handle = "0.4"
+raw-window-handle = "0.5"
 cgmath = "0.18"
 image = "0.24"
 log = "0.4"
@@ -42,4 +42,3 @@ path = "examples/basic/input.rs"
 
 [dev-dependencies]
 criterion = "0.5"
-glutin = "0.29"

@@ -1,31 +1,53 @@
-use glutin::{dpi::PhysicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder};
+use glutin::config::ConfigTemplateBuilder;
+use glutin::context::{ContextApi, ContextAttributesBuilder};
+use glutin::display::DisplayApiPreference;
+use glutin::prelude::*;
+use glutin::surface::SurfaceAttributesBuilder;
 use nyanko_engine::graphics::Shader;
-
-fn create_context() -> (
-    EventLoop<()>,
-    glutin::WindowedContext<glutin::PossiblyCurrent>,
-) {
-    let el = EventLoop::new();
-    let wb = WindowBuilder::new()
-        .with_visible(false)
-        .with_inner_size(PhysicalSize::new(1, 1));
-
-    let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
-
-    let windowed_context = unsafe {
-        windowed_context
-            .make_current()
-            .expect("Failed to make context current")
-    };
-
-    gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
-
-    (el, windowed_context)
-}
+use raw_window_handle::RawDisplayHandle;
 
 #[test]
 fn test_shader_creation() {
-    let (_el, _context) = create_context();
+    // Create a headless context
+    let display_builder = glutin::display::DisplayApiPreference::Cgl;
+    let display = unsafe {
+        glutin::display::Display::new(RawDisplayHandle::Cgl(None), display_builder).unwrap()
+    };
+
+    let template = ConfigTemplateBuilder::new()
+        .with_alpha_size(8)
+        .with_transparency(true)
+        .build();
+
+    let config = unsafe { display.find_configs(template) }
+        .unwrap()
+        .next()
+        .unwrap();
+
+    let context_attributes = ContextAttributesBuilder::new()
+        .with_context_api(ContextApi::OpenGl(None))
+        .build(None);
+
+    let context = unsafe {
+        display
+            .create_context(&config, &context_attributes)
+            .unwrap()
+    };
+
+    let surface_attributes = SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new()
+        .with_visibility(false)
+        .build();
+
+    let _surface = unsafe {
+        display
+            .create_window_surface(&config, &surface_attributes)
+            .unwrap()
+    };
+
+    let context = context.make_current_surfaceless().unwrap();
+
+    // Now we can load GL functions and create shaders
+    gl::load_with(|s| display.get_proc_address(s) as *const _);
 
     let vertex_shader = r#"
         #version 330 core
